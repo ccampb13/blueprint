@@ -7,35 +7,34 @@ process.env.DBNAME = 'blueprint-test';
 
 var expect = require('chai').expect;
 var Mongo = require('mongodb');
-var app = require('../../app/app');
-var request = require('supertest');
 var traceur = require('traceur');
+var db = traceur.require(__dirname + '/../../helpers/db.js');
+var factory = traceur.require(__dirname + '/../../helpers/factory.js');
 
 var User;
 var sue;
 
 describe('User', function(){
   before(function(done){
-    request(app)
-    .get('/')
-    .end(function(){
-      User = traceur.require(__dirname + '/../../app/models/user.js');
+    db(function(){
+      User = traceur.require(__dirname + '/../../../app/models/user.js');
       done();
     });
   });
 
   beforeEach(function(done){
     global.nss.db.collection('users').drop(function(){
-      User.register({email:'sue@aol.com', password:'abcd'}, function(u){
-        sue = u;
+
+      factory('user', function(users){
+        console.log(sue);
         done();
       });
     });
   });
 
-  describe('.register', function(){
-    it('should successfully register a user', function(done){
-      User.register({email:'bob@aol.com', password:'1234'}, function(u){
+  describe('.create', function(){
+    it('should successfully create a user', function(done){
+      User.create({email:'bob@aol.com', password:'1234'}, function(u){
         expect(u).to.be.ok;
         expect(u).to.be.an.instanceof(User);
         expect(u._id).to.be.an.instanceof(Mongo.ObjectID);
@@ -44,8 +43,8 @@ describe('User', function(){
       });
     });
 
-    it('should NOT successfully register a user', function(done){
-      User.register({email:'sue@aol.com', password:'does not matter'}, function(u){
+    it('should NOT successfully create a user', function(done){
+      User.create({email:'sue@aol.com', password:'does not matter'}, function(u){
         expect(u).to.be.null;
         done();
       });
@@ -54,7 +53,7 @@ describe('User', function(){
 
   describe('.login', function(){
     it('should successfully login a user', function(done){
-      User.login({email:'sue@aol.com', password:'abcd'}, function(u){
+      User.login({email:'sue@aol.com', password:'5678'}, function(u){
         expect(u).to.be.ok;
         done();
       });
@@ -77,9 +76,9 @@ describe('User', function(){
 
   describe('.findById', function(){
     it('should successfully find a user', function(done){
-      User.findById(sue._id.toString(), function(u){
+      User.findById('0123456789abcdef01234568', function(u){
         expect(u).to.be.instanceof(User);
-        expect(u.email).to.equal(sue.email);
+        expect(u.email).to.equal('sue@aol.com');
         done();
       });
     });
@@ -87,6 +86,13 @@ describe('User', function(){
 
     it('should NOT successfully find a user', function(done){
       User.findById('not an id', function(u){
+        expect(u).to.be.null;
+        done();
+      });
+    });
+
+    it('should NOT successfully find a user - NULL', function(done){
+      User.findById(null, function(u){
         expect(u).to.be.null;
         done();
       });

@@ -1,13 +1,16 @@
 var bcrypt = require('bcrypt');
 var userCollection = global.nss.db.collection('users');
 var Mongo = require('mongodb');
-var _ = require('lodash');
+// var _ = require('lodash');
+var traceur = require('traceur');
+var Base = traceur.require(__dirname + '/base.js');
 
 class User{
-  static register(obj, fn){
+  static create(obj, fn){
     userCollection.findOne({email:obj.email}, (e,u)=>{
       if(!u){
         var user = new User();
+        user._id = Mongo.ObjectID(obj._id);
         user.email = obj.email;
         user.password = bcrypt.hashSync(obj.password, 8);
         userCollection.save(user, ()=>fn(user));
@@ -33,18 +36,9 @@ class User{
   }
 
   static findById(id, fn){
-    if(id.length !== 24){fn(null); return;}
-
-    id = Mongo.ObjectID(id);
-    userCollection.findOne({_id:id}, (e,u)=>{
-      if(u){
-        u = _.create(User.prototype, u);
-        fn(u);
-      }else{
-        fn(null);
-      }
-    });
+    Base.findById(id, userCollection, User, fn);
   }
+
 }
 
 module.exports = User;
